@@ -9,6 +9,11 @@ import java.awt.event.ActionListener;
 // then press Enter. You can now see whitespace characters in your code.
 public class Main {
     public static void main(String[] args) {
+        openForm();
+    }
+
+
+    public static void openForm(){
         JFrame frame = new JFrame();
         //frame.setLayout(new FlowLayout());
         frame.setLayout(null);
@@ -55,7 +60,19 @@ public class Main {
                     JOptionPane.showMessageDialog(frame,"Welcome Admin, Age "+age);
                     return;
                 }
-                JOptionPane.showMessageDialog(frame,"Name "+name+",Age "+age);
+                //JOptionPane.showMessageDialog(frame,"Name "+name+",Age "+age);
+                /*frame.dispose();
+                JFrame newFrame = new JFrame();
+
+                newFrame.setSize(300,200);
+                newFrame.setLayout(new FlowLayout());
+
+                JLabel msg = new JLabel("Name "+name+",Age "+age);
+                newFrame.add(msg);
+
+                newFrame.setVisible(true);*/
+                frame.dispose();
+                new Dashboard(name,age);
             }
         });
 
@@ -79,4 +96,5 @@ public class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
     }
+
 }
