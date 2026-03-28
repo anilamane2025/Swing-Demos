@@ -5,45 +5,22 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class StudentForm{
+public class StudentForm {
+
+    // Stores all student records in memory
     static ArrayList<Student> studentList = new ArrayList<>();
+    static StudentService studentService = new StudentService();
+    // Used to identify whether the form is in normal add mode or edit/update mode
     static boolean editMode = false;
     static int editIndex = -1;
 
+    // Temporary values used to prefill the form when editing a student
     static String tempName;
     static int tempAge;
     static String tempCourse;
 
-    public static void openForm(String name, int age, String course){
-        /*JFrame frame = new JFrame();
-        frame.setTitle("Student Form");
-        frame.setSize(500,400);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        JLabel nameLabel = new JLabel("Name: ");
-        JTextField nameField = new JTextField(15);
-
-        JLabel ageLabel =  new JLabel("Age: ");
-        JTextField ageField = new JTextField(10);
-
-        JLabel courseLabel = new JLabel("Course: ");
-        String[] courses = {"Java",".NET","Python","C++"};
-        JComboBox<String> courseBox = new JComboBox<>(courses);
-
-        nameField.setText(name);
-        ageField.setText(String.valueOf(age));
-        courseBox.setSelectedItem(course);
-
-        frame.setLayout(new FlowLayout());
-        frame.add(nameLabel);
-        frame.add(nameField);
-        frame.add(ageLabel);
-        frame.add(ageField);
-        frame.add(courseLabel);
-        frame.add(courseBox);
-
-        frame.setVisible(true);*/
-
+    // Opens the form in edit mode with existing student data prefilled
+    public static void openForm(String name, int age, String course) {
         editMode = true;
 
         tempName = name;
@@ -54,13 +31,25 @@ public class StudentForm{
     }
 
     public static void main(String[] args) {
+        studentService.createTable();
+        try{
+            System.out.println(DBConnection.getConnection());
+        }catch(Exception e){
+            e.printStackTrace();
+        }
 
         JFrame frame = new JFrame();
         frame.setTitle("Student Form");
-        frame.setSize(400,300);
+
+        // Change form title when user is updating an existing student
+        if (editMode) {
+            frame.setTitle("Update Student");
+        }
+
+        frame.setSize(400, 300);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JLabel nameLabel  = new JLabel("Name:");
+        JLabel nameLabel = new JLabel("Name:");
         JTextField nameField = new JTextField(15);
         JPanel namePanel = new JPanel();
         namePanel.add(nameLabel);
@@ -73,13 +62,14 @@ public class StudentForm{
         agePanel.add(ageField);
 
         JLabel courseLabel = new JLabel("Course:");
-        String[] courses = {"Java",".NET","Python"};
-        JComboBox<String>  courseBox = new JComboBox<>(courses);
+        String[] courses = {"Java", ".NET", "Python"};
+        JComboBox<String> courseBox = new JComboBox<>(courses);
         JPanel coursePanel = new JPanel();
         coursePanel.add(courseLabel);
         coursePanel.add(courseBox);
 
-        if(editMode){
+        // Prefill the form fields when edit mode is active
+        if (editMode) {
             nameField.setText(tempName);
             ageField.setText(String.valueOf(tempAge));
             courseBox.setSelectedItem(tempCourse);
@@ -91,193 +81,209 @@ public class StudentForm{
         searchPanel.add(searchLabel);
         searchPanel.add(searchField);
 
-        //JButton submitButton = new JButton("Submit");
         JButton addButton = new JButton("Add Student");
-        if(editMode){
+
+        // Change button text when the same form is used for updating
+        if (editMode) {
             addButton.setText("Update Student");
         }
+
         JButton showButton = new JButton("Show Students");
-        JButton clearAllButton = new JButton("Clear All Students");
+        JButton clearAllButton = new JButton("Clear All");
         JButton searchButton = new JButton("Search");
         JButton deleteButton = new JButton("Delete");
 
         JPanel buttonPanel = new JPanel();
-        //buttonPanel.add(submitButton);
         buttonPanel.add(addButton);
         buttonPanel.add(showButton);
         buttonPanel.add(clearAllButton);
         buttonPanel.add(searchButton);
         buttonPanel.add(deleteButton);
 
-
-        deleteButton.addActionListener(e->{
+        // Delete student safely using Iterator to avoid ConcurrentModificationException
+        deleteButton.addActionListener(e -> {
             String searchName = searchField.getText();
 
-            if(searchName.isBlank()){
-                JOptionPane.showMessageDialog(frame,"Please enter name to delete");
+            if (searchName.isBlank()) {
+                JOptionPane.showMessageDialog(frame, "Please enter name to delete");
                 return;
             }
 
-            boolean deleted  = false;
+            /*boolean deleted = false;
 
-            //chances of facing ConcurrentModificationException
-            /*for(Student s : studentList){
-                if(s.getName().equalsIgnoreCase(searchName)){
-                    studentList.remove(s);
-                    deleted = true;
-                    break;
-                }
-            }*/
-
-            //Safe Version using iterator
             Iterator<Student> iterator = studentList.iterator();
-            while(iterator.hasNext()){
+            while (iterator.hasNext()) {
                 Student s = iterator.next();
 
-                if(s.getName().equalsIgnoreCase(searchName)){
+                if (s.getName().equalsIgnoreCase(searchName)) {
                     iterator.remove();
                     deleted = true;
                     break;
                 }
+            }*/
 
-            }
+            boolean deleted = studentService.deleteStudentByName(searchName);
 
-            if(deleted){
-                JOptionPane.showMessageDialog(frame,"deleted successfully");
+            if (deleted) {
+                JOptionPane.showMessageDialog(frame, "deleted successfully");
                 searchField.setText("");
-            }else{
-                JOptionPane.showMessageDialog(frame,"Student not found");
+            } else {
+                JOptionPane.showMessageDialog(frame, "Student not found");
             }
         });
 
-        searchButton.addActionListener(e->{
+        // Search student by partial name match and show all matching results
+        searchButton.addActionListener(e -> {
 
             String searchName = searchField.getText();
-            if(searchName.isBlank()){
-                JOptionPane.showMessageDialog(frame,"Please enter name to search");
+            if (searchName.isBlank()) {
+                JOptionPane.showMessageDialog(frame, "Please enter name to search");
                 return;
             }
 
-            //single matching name search
-            /*boolean found = false;
-            for(Student s : studentList){
+            /*StringBuilder result = new StringBuilder();
 
-                if(s.getName().toLowerCase().contains(searchName.toLowerCase())){
-                    JOptionPane.showMessageDialog(frame,"Name: "+s.getName()
-                    +"\nAge: "+s.getAge()
-                    +"\nCourse: "+s.getCourse());
-
-                    found = true;
-                    break;
-                }
-            }
-            if(!found){
-                JOptionPane.showMessageDialog(frame,"Student not found");
-            }*/
-
-            //multiple matching name search
-            StringBuilder result = new StringBuilder();
-
-            for(Student s : studentList){
-                if(s.getName().toLowerCase().contains(searchName.toLowerCase())){
+            for (Student s : studentList) {
+                if (s.getName().toLowerCase().contains(searchName.toLowerCase())) {
                     result.append("Name: ").append(s.getName())
                             .append(", Age ").append(s.getAge())
                             .append(", Course ").append(s.getCourse())
                             .append("\n");
                 }
-            }
+            }*/
 
-            if(result.length() == 0){
-                JOptionPane.showMessageDialog(frame,"Student not found");
-            }else{
-                JOptionPane.showMessageDialog(frame,result.toString());
+            String result  = studentService.searchStudentsByName(searchName);
+
+            if (result.isBlank()) {
+                JOptionPane.showMessageDialog(frame, "Student not found");
+            } else {
+                JOptionPane.showMessageDialog(frame, result);
             }
         });
 
-        clearAllButton.addActionListener(e->{
-            studentList.clear();
-            JOptionPane.showMessageDialog(frame,"All students cleared");
+        // Remove all students from the list
+        clearAllButton.addActionListener(e -> {
+
+            if(studentService.getAllStudents().isEmpty()){
+                JOptionPane.showMessageDialog(frame,"No students to clear");
+                return;
+            }
+
+            //studentList.clear();
+            studentService.clearAllStudents();
+            JOptionPane.showMessageDialog(frame, "All students cleared");
         });
 
-        showButton.addActionListener(e->{
+        // Open dashboard only when at least one student exists
+        showButton.addActionListener(e -> {
 
-            if(studentList.isEmpty()){
+            /*if (studentService.getAllStudents().isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "No students added yet");
+                return;
+            }
+
+            //new StudentDashboard(studentList, -1);
+            new StudentDashboard(studentService.getAllStudents(), -1);*/
+
+            ArrayList<Student> students = studentService.getAllStudentsFromDB();
+
+            if(students.isEmpty()){
                 JOptionPane.showMessageDialog(frame,"No students added yet");
                 return;
             }
 
-            new StudentDashboard(studentList);
+            new StudentDashboard(students,-1);
+
         });
 
-        addButton.addActionListener(e->{
+        // Handles both Add Student and Update Student operations
+        addButton.addActionListener(e -> {
             String name = nameField.getText();
             String ageText = ageField.getText();
-            String course = (String)courseBox.getSelectedItem();
+            String course = (String) courseBox.getSelectedItem();
 
-            if(name.isBlank() || ageText.isBlank()){
+            // Basic empty field validation
+            if (name.isBlank() || ageText.isBlank()) {
                 JOptionPane.showMessageDialog(frame,
                         "kindly fill all fields");
                 return;
             }
+
             int age;
-            try{
+
+            // Validate numeric age input
+            try {
                 age = Integer.parseInt(ageText);
-            }catch (NumberFormatException exc){
+            } catch (NumberFormatException exc) {
                 JOptionPane.showMessageDialog(frame,
                         "Kindly enter valid age");
                 return;
             }
-            if(age < 1 || age > 120){
+
+            // Validate age range
+            if (age < 1 || age > 120) {
                 JOptionPane.showMessageDialog(frame,
                         "Invalid age range");
                 return;
             }
-            if(editMode){
-                studentList.set(editIndex, new Student(name,age,course));
+
+            // Update existing student when edit mode is active
+            if (editMode) {
+                Student updatedStudent = new Student(name,age,course);
+                studentService.updateStudent(editIndex,updatedStudent);
+                //studentList.set(editIndex, new Student(name, age, course));
                 editMode = false;
                 editIndex = -1;
-                JOptionPane.showMessageDialog(frame,"Student updated successfully");
-                nameField.setText("");
-                ageField.setText("");
-                courseBox.setSelectedItem(0);
-                nameField.requestFocus();
-            }
-            else{
-                Student student = new Student(name,age,course);
 
+                JOptionPane.showMessageDialog(frame, "Student updated successfully");
+
+                frame.dispose();
+                //new StudentDashboard(studentList, -1);
+                new StudentDashboard(studentService.getAllStudents(), -1);
+            } else {
+                /*Student student = new Student(name, age, course);
+
+                // Prevent duplicate student entries with same name, age and course
                 boolean alreadyExist = false;
 
-                for(Student s:studentList){
-                    if(s.getName().equalsIgnoreCase(name)
-                    && s.getAge() == age
-                    && s.getCourse().equalsIgnoreCase(course)){
+                for (Student s : studentList) {
+                    if (s.getName().equalsIgnoreCase(name)
+                            && s.getAge() == age
+                            && s.getCourse().equalsIgnoreCase(course)) {
                         alreadyExist = true;
                         break;
                     }
                 }
-                if(alreadyExist){
+
+                if (alreadyExist) {
+                    JOptionPane.showMessageDialog(frame, "Student already exist");
+                    return;
+                }
+
+                // Add new student and reset form fields
+                studentList.add(student);*/
+
+                Student student = new Student(name,age,course);
+
+                //boolean added = studentService.addStudent(student);
+                boolean added = studentService.addStudentToDB(student);
+
+                if(!added){
                     JOptionPane.showMessageDialog(frame,"Student already exist");
                     return;
                 }
-                studentList.add(student);
-                System.out.println(studentList.size());
-                /*JOptionPane.showMessageDialog(frame,
-                        "Name: "+name+"\nAge: "+age+"\nCourse: "+course);*/
 
-                /*frame.dispose();
-                new StudentDashboard(studentList);*/
                 nameField.setText("");
                 ageField.setText("");
                 courseBox.setSelectedIndex(0);
                 nameField.requestFocus();
 
-                JOptionPane.showMessageDialog(frame,"Student added successfully");
+                JOptionPane.showMessageDialog(frame, "Student added successfully");
             }
         });
 
-
-
-        frame.setLayout(new GridLayout(5,1));
+        // Arrange form rows vertically
+        frame.setLayout(new GridLayout(5, 1));
 
         frame.add(namePanel);
         frame.add(agePanel);
@@ -287,5 +293,4 @@ public class StudentForm{
 
         frame.setVisible(true);
     }
-
 }
