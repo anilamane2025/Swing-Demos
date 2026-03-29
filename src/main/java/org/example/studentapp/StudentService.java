@@ -110,17 +110,19 @@ public class StudentService {
     public ArrayList<Student> getAllStudentsFromDB(){
 
         ArrayList<Student> students = new ArrayList<>();
-        String sql = "SELECT name,age,course FROM Students";
+        String sql = "SELECT id,name,age,course FROM Students";
 
         try(Connection connection = DBConnection.getConnection();
             PreparedStatement  ps = connection.prepareStatement(sql);
             ResultSet rs = ps.executeQuery()){
 
             while (rs.next()){
+                int id = rs.getInt("id");
                 String name = rs.getString("name");
                 int age = rs.getInt("age");
                 String course = rs.getString("course");
-                students.add(new Student(name,age,course));
+
+                students.add(new Student(id,name,age,course));
             }
 
 
@@ -128,6 +130,90 @@ public class StudentService {
             e.printStackTrace();
         }
         return students;
+    }
+
+    public boolean deleteStudentById(int id){
+
+        String sql = "DELETE FROM students WHERE id = ?";
+
+        try(Connection connection = DBConnection.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)){
+
+            ps.setInt(1,id);
+
+            int rows = ps.executeUpdate();
+            System.out.println("Deleted rows = "+rows);
+
+            return rows > 0;
+
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public boolean updateStudentbyId(int id,Student student){
+
+        String sql = "UPDATE students SET name = ?,age = ?, course = ? where id = ?";
+
+        try(Connection connection = DBConnection.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)){
+
+            ps.setString(1,student.getName());
+            ps.setInt(2,student.getAge());
+            ps.setString(3,student.getCourse());
+            ps.setInt(4,id);
+
+            int rows = ps.executeUpdate();
+            return rows > 0;
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public ArrayList<Student> searchStudentsFromDB(String searchName){
+
+        ArrayList<Student> students = new ArrayList<>();
+        String sql = "SELECT id,name,age,course FROM students WHERE LOWER(name) LIKE ? ";
+
+        try(Connection connection = DBConnection.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)){
+            ps.setString(1,"%"+searchName.toLowerCase()+"%");
+
+            try(ResultSet rs = ps.executeQuery()){
+                while (rs.next()){
+                    int id = rs.getInt("id");
+                    String name = rs.getString("name");
+                    int age = rs.getInt("age");
+                    String course = rs.getString("course");
+
+                    students.add(new Student(id,name,age,course));
+                }
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return students;
+    }
+
+    public boolean clearAllStudentsFromDB(){
+        String sql = "DELETE FROM students";
+
+        try(Connection connection = DBConnection.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)){
+
+            int rows = ps.executeUpdate();
+            System.out.println("Deleted rows "+rows);
+
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
     }
 
 }

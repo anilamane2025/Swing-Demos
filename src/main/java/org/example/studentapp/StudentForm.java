@@ -19,6 +19,8 @@ public class StudentForm {
     static int tempAge;
     static String tempCourse;
 
+    static int editStudentId = -1;
+
     // Opens the form in edit mode with existing student data prefilled
     public static void openForm(String name, int age, String course) {
         editMode = true;
@@ -109,19 +111,6 @@ public class StudentForm {
                 return;
             }
 
-            /*boolean deleted = false;
-
-            Iterator<Student> iterator = studentList.iterator();
-            while (iterator.hasNext()) {
-                Student s = iterator.next();
-
-                if (s.getName().equalsIgnoreCase(searchName)) {
-                    iterator.remove();
-                    deleted = true;
-                    break;
-                }
-            }*/
-
             boolean deleted = studentService.deleteStudentByName(searchName);
 
             if (deleted) {
@@ -141,49 +130,48 @@ public class StudentForm {
                 return;
             }
 
-            /*StringBuilder result = new StringBuilder();
+            ArrayList<Student> students = studentService.searchStudentsFromDB(searchName);
 
-            for (Student s : studentList) {
-                if (s.getName().toLowerCase().contains(searchName.toLowerCase())) {
+            if(students.isEmpty()){
+                JOptionPane.showMessageDialog(frame,"Student not found");
+            }else{
+                StringBuilder result = new StringBuilder();
+
+                for(Student s : students){
                     result.append("Name: ").append(s.getName())
-                            .append(", Age ").append(s.getAge())
-                            .append(", Course ").append(s.getCourse())
+                            .append(", Age: ").append(s.getAge())
+                            .append(", Course: ").append(s.getCourse())
                             .append("\n");
                 }
-            }*/
-
-            String result  = studentService.searchStudentsByName(searchName);
-
-            if (result.isBlank()) {
-                JOptionPane.showMessageDialog(frame, "Student not found");
-            } else {
-                JOptionPane.showMessageDialog(frame, result);
+                JOptionPane.showMessageDialog(frame,result.toString());
             }
+
         });
 
         // Remove all students from the list
         clearAllButton.addActionListener(e -> {
 
-            if(studentService.getAllStudents().isEmpty()){
-                JOptionPane.showMessageDialog(frame,"No students to clear");
+            int confirm = JOptionPane.showConfirmDialog(
+                    frame,
+                    "Are you sure want to delete all students? ",
+                    "confirm",JOptionPane.YES_NO_OPTION);
+
+            if(confirm != JOptionPane.YES_NO_OPTION){
                 return;
             }
+            boolean cleared = studentService.clearAllStudentsFromDB();
 
-            //studentList.clear();
-            studentService.clearAllStudents();
-            JOptionPane.showMessageDialog(frame, "All students cleared");
+            if(cleared){
+                JOptionPane.showMessageDialog(frame,"All students cleared successfully");
+                frame.dispose();
+                new StudentDashboard(studentService.getAllStudentsFromDB(),-1);
+            }else{
+                JOptionPane.showMessageDialog(frame,"Could not clear students");
+            }
         });
 
         // Open dashboard only when at least one student exists
         showButton.addActionListener(e -> {
-
-            /*if (studentService.getAllStudents().isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "No students added yet");
-                return;
-            }
-
-            //new StudentDashboard(studentList, -1);
-            new StudentDashboard(studentService.getAllStudents(), -1);*/
 
             ArrayList<Student> students = studentService.getAllStudentsFromDB();
 
@@ -230,56 +218,37 @@ public class StudentForm {
             // Update existing student when edit mode is active
             if (editMode) {
                 Student updatedStudent = new Student(name,age,course);
-                studentService.updateStudent(editIndex,updatedStudent);
-                //studentList.set(editIndex, new Student(name, age, course));
-                editMode = false;
-                editIndex = -1;
+                boolean updated = studentService.updateStudentbyId(editStudentId,updatedStudent);
+                if(updated) {
+                    editMode = false;
+                    editIndex = -1;
+                    editStudentId = -1;
 
-                JOptionPane.showMessageDialog(frame, "Student updated successfully");
+                    JOptionPane.showMessageDialog(frame, "Student updated successfully");
 
-                frame.dispose();
-                //new StudentDashboard(studentList, -1);
-                new StudentDashboard(studentService.getAllStudents(), -1);
-            } else {
-                /*Student student = new Student(name, age, course);
+                    frame.dispose();
+                    new StudentDashboard(studentService.getAllStudentsFromDB(), -1);
 
-                // Prevent duplicate student entries with same name, age and course
-                boolean alreadyExist = false;
+                }else{
+                    JOptionPane.showMessageDialog(frame,"Student could not be updated");
+                }
 
-                for (Student s : studentList) {
-                    if (s.getName().equalsIgnoreCase(name)
-                            && s.getAge() == age
-                            && s.getCourse().equalsIgnoreCase(course)) {
-                        alreadyExist = true;
-                        break;
+                }else{
+                    Student student = new Student(name,age,course);
+                    boolean added = studentService.addStudentToDB(student);
+
+                    if(!added){
+                        JOptionPane.showMessageDialog(frame,"Student could not be added");
+                        return;
                     }
+
+                    nameField.setText("");
+                    ageField.setText("");
+                    courseBox.setSelectedIndex(0);
+                    nameField.requestFocus();
+
+                    JOptionPane.showMessageDialog(frame,"Student added successfully");
                 }
-
-                if (alreadyExist) {
-                    JOptionPane.showMessageDialog(frame, "Student already exist");
-                    return;
-                }
-
-                // Add new student and reset form fields
-                studentList.add(student);*/
-
-                Student student = new Student(name,age,course);
-
-                //boolean added = studentService.addStudent(student);
-                boolean added = studentService.addStudentToDB(student);
-
-                if(!added){
-                    JOptionPane.showMessageDialog(frame,"Student already exist");
-                    return;
-                }
-
-                nameField.setText("");
-                ageField.setText("");
-                courseBox.setSelectedIndex(0);
-                nameField.requestFocus();
-
-                JOptionPane.showMessageDialog(frame, "Student added successfully");
-            }
         });
 
         // Arrange form rows vertically

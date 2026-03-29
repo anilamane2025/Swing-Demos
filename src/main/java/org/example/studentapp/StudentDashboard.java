@@ -40,6 +40,8 @@ public class StudentDashboard extends JFrame {
 
                         StudentForm.editMode = true;
                         StudentForm.editIndex = selectedRow;
+                        StudentForm.editStudentId = selectedStudent.getId();
+
                         dispose();
 
                         StudentForm.openForm(
@@ -78,13 +80,23 @@ public class StudentDashboard extends JFrame {
                 return;
             }
 
-            studentList.remove(selectedRow);
-            model.removeRow(selectedRow);
+            Student selectedStudent  = studentList.get(selectedRow);
+            int studentId = selectedStudent.getId();
 
-            // Clear selection after delete for better user experience
-            table.clearSelection();
+            System.out.println("Selected Row = "+selectedRow);
+            System.out.println("Student Id = "+studentId);
 
-            JOptionPane.showMessageDialog(this, "Student deleted successfully");
+            boolean deleted = StudentForm.studentService.deleteStudentById(studentId);
+
+            if(deleted){
+                studentList.remove(selectedRow);
+                model.removeRow(selectedRow);
+                table.clearSelection();
+
+                JOptionPane.showMessageDialog(this, "Student deleted successfully");
+            }else{
+                JOptionPane.showMessageDialog(this, "Student could not be deleted");
+            }
         });
 
         // Show details of the currently selected row
